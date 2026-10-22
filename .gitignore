@@ -12,6 +12,11 @@ Thumbs.db
 *.user
 *.suo
 
+# Backend (Python)
+**/__pycache__/
+**/.venv/
+*.pyc
+
 # Frontend (Node)
 Frontend/node_modules/
 Frontend/dist/
