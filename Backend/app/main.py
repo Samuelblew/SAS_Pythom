@@ -1,7 +1,10 @@
-from fastapi import FastAPI, Request
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.bootstrap import ensure_schema
 from app.config import get_settings
@@ -67,3 +70,42 @@ async def validation_handler(_: Request, exc: RequestValidationError):
 @app.exception_handler(Exception)
 async def unhandled(_: Request, __: Exception):
     return problem(500, "Erro interno", "Ocorreu um erro inesperado.")
+
+
+def _frontend_dist() -> Path | None:
+    if settings.frontend_dist:
+        configured = Path(settings.frontend_dist)
+        if (configured / "index.html").is_file():
+            return configured
+    here = Path(__file__).resolve()
+    candidates = [
+        here.parents[2] / "Frontend" / "dist",
+        here.parents[1].parent / "Frontend" / "dist",
+        Path("/app/Frontend/dist"),
+    ]
+    for path in candidates:
+        if (path / "index.html").is_file():
+            return path
+    return None
+
+
+_dist = _frontend_dist()
+if _dist is not None:
+    assets = _dist / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="assets")
+
+    @app.get("/", include_in_schema=False)
+    def spa_root():
+        return FileResponse(_dist / "index.html")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa_fallback(full_path: str):
+        if full_path.startswith("api/") or full_path.startswith("swagger"):
+            raise HTTPException(status_code=404, detail="Não encontrado")
+        target = (_dist / full_path).resolve()
+        if _dist.resolve() not in target.parents and target != _dist.resolve():
+            raise HTTPException(status_code=404, detail="Não encontrado")
+        if target.is_file():
+            return FileResponse(target)
+        return FileResponse(_dist / "index.html")

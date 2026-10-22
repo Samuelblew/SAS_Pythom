@@ -1,8 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/IAS.Api/IAS.Api.csproj" />
-    <Project Path="src/IAS.Application/IAS.Application.csproj" />
-    <Project Path="src/IAS.Domain/IAS.Domain.csproj" />
-    <Project Path="src/IAS.Infrastructure/IAS.Infrastructure.csproj" />
-  </Folder>
-</Solution>

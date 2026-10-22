@@ -1,4 +1,7 @@
+import time
+
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from app.database import engine
 
@@ -53,6 +56,14 @@ STATEMENTS = [
 
 
 def ensure_schema() -> None:
-    with engine.begin() as conn:
-        for statement in STATEMENTS:
-            conn.execute(text(statement))
+    last_error: Exception | None = None
+    for attempt in range(1, 16):
+        try:
+            with engine.begin() as conn:
+                for statement in STATEMENTS:
+                    conn.execute(text(statement))
+            return
+        except OperationalError as exc:
+            last_error = exc
+            time.sleep(min(2 * attempt, 10))
+    raise last_error or RuntimeError("Não foi possível conectar ao MySQL.")

@@ -1,0 +1,8 @@
+version: 1.0
+runtime: docker
+build:
+  dockerfilePath: Dockerfile
+run:
+  network:
+    port: 8080
+  healthCheckPath: /api/v1/health

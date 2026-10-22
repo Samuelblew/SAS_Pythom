@@ -1,0 +1,17 @@
+.git
+.github
+**/.venv
+**/__pycache__
+**/node_modules
+Frontend/dist
+Backend/src
+Backend/tests
+**/.env
+**/.env.local
+docs
+infra
+*.md
+Portifolio
+**/.vs
+**/bin
+**/obj

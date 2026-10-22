@@ -1,0 +1,57 @@
+================================================================================
+  IAS — DEPLOY AWS
+================================================================================
+
+Imagem Docker: API FastAPI + frontend estático na mesma porta (8080).
+Banco: Amazon RDS MySQL 8.
+
+OPÇÃO MAIS SIMPLES: App Runner + RDS
+------------------------------------
+  1. RDS MySQL 8
+       - Crie o banco (ex.: ias)
+       - Security group: libere 3306 para o App Runner (VPC connector)
+       - Anote host, user, password, database
+
+  2. ECR (repositório de imagem)
+       aws ecr create-repository --repository-name ias --region sa-east-1
+       docker build -t ias .
+       docker tag ias:latest ACCOUNT.dkr.ecr.sa-east-1.amazonaws.com/ias:latest
+       aws ecr get-login-password | docker login --username AWS --password-stdin ACCOUNT.dkr.ecr.sa-east-1.amazonaws.com
+       docker push ACCOUNT.dkr.ecr.sa-east-1.amazonaws.com/ias:latest
+
+  3. App Runner → Create service → Container from ECR
+       - Porta: 8080
+       - Health check: /api/v1/health
+       - Variáveis:
+           PORT=8080
+           ENVIRONMENT=production
+           JWT_SECRET=(string longa, 32+)
+           MYSQL_HOST=(endpoint RDS)
+           MYSQL_PORT=3306
+           MYSQL_USER=...
+           MYSQL_PASSWORD=...
+           MYSQL_DATABASE=ias
+           MYSQL_SSL=true
+         Elastic Beanstalk com RDS também aceita RDS_HOSTNAME / RDS_USERNAME / RDS_PASSWORD / RDS_DB_NAME.
+
+  4. Abra a URL do App Runner
+       GET /api/v1/health  →  healthy + database connected
+       Site na raiz  /     Swagger em /swagger
+
+  5. POST /api/v1/tenants  { "name": "Demo" }  e cole o GUID no campo Tenant.
+
+ELASTIC BEANSTALK (Docker)
+--------------------------
+  eb init / console: plataforma Docker
+  Dockerrun.aws.json na raiz, mesma imagem/Dockerfile.
+  Anexe RDS MySQL ou use um RDS existente.
+
+ECS / Fargate
+-------------
+  Task definition: container 8080, mesmas env vars, health check /api/v1/health
+  Service atrás de um ALB.
+
+BUILD LOCAL DA IMAGEM
+---------------------
+  docker build -t ias .
+  docker run --rm -p 8080:8080 --env-file Backend/.env -e PORT=8080 -e ENVIRONMENT=production ias

@@ -10,10 +10,16 @@ class Base(DeclarativeBase):
     pass
 
 
+settings = get_settings()
+connect_args: dict = {}
+if settings.use_ssl:
+    connect_args["ssl"] = {}
+
 engine = create_engine(
-    get_settings().database_url,
+    settings.database_url,
     pool_pre_ping=True,
     pool_recycle=3600,
+    connect_args=connect_args,
 )
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)

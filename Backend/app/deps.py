@@ -29,7 +29,10 @@ class RequestContext:
 
 
 def _bypass(path: str) -> bool:
-    return any(path.lower().startswith(prefix) for prefix in BYPASS_PREFIXES)
+    lowered = path.lower()
+    if any(lowered.startswith(prefix) for prefix in BYPASS_PREFIXES):
+        return True
+    return not lowered.startswith("/api")
 
 
 class TenantMiddleware(BaseHTTPMiddleware):
