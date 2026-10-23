@@ -1,52 +1,161 @@
 # IAS — Intelligent Allocation System
 
-Plataforma de alocação de pessoas em consultorias: visibilidade operacional, capacidade futura e apoio à decisão comercial.
+Ferramenta de gerenciamento para **gerentes de projetos** planejarem equipes e acompanharem a alocação de profissionais. O IAS reúne pessoas, competências, clientes e projetos para ajudar o gerente a identificar disponibilidade, distribuir trabalho, evitar sobrecarga e acompanhar custos e capacidade futura.
 
-**Cloud alvo:** AWS (App Runner / ECS / Elastic Beanstalk + RDS MySQL).
+## O que o sistema oferece
 
-## Sobre este projeto
+- Cadastro de profissionais, competências, clientes e projetos.
+- Alocação de pessoas por período e percentual de dedicação.
+- Controle de indisponibilidades e bloqueio de sobrealocação.
+- Visões de capacidade, profissionais disponíveis e necessidades dos projetos.
+- Sugestões de profissionais por critérios determinísticos de compatibilidade.
+- Indicadores financeiros, simulações e histórico de alterações.
+- Separação dos dados por organização (tenant).
 
-Este projeto nasceu de uma demanda real: fui requisitado para desenvolver um sistema interno de alocação de pessoas para gerentes de projeto em uma consultoria onde trabalhei. O MVP seria apresentado internamente, mas foi descartado — meu desligamento da empresa aconteceu antes da apresentação, e o projeto ficou sem dono. Depois de sair, resgatei o código, removi toda referência à empresa original, refiz partes do meu jeito e publiquei aqui para não deixar o trabalho se perder.
+## Instalação rápida com Docker
 
-Um detalhe do frontend: o cabeçalho tinha um logo 3D interativo (gira ao passar o mouse, responde a clique), modelado por mim no Blender e integrado via React Three Fiber/Three.js. Essa peça carregava a identidade visual da empresa anterior, então os arquivos de imagem (`.glb` e a imagem de fallback) foram removidos do projeto — mas a funcionalidade em si não foi apagada, só desabilitada: o componente continua em [`Frontend/src/components/InteractiveLogo.tsx`](Frontend/src/components/InteractiveLogo.tsx), funcional e pronto para carregar um novo modelo 3D sem marca de terceiros. O ícone estático "IAS" que aparece hoje no cabeçalho ([`Frontend/src/components/Layout.tsx`](Frontend/src/components/Layout.tsx)) ocupa esse mesmo lugar como placeholder — é o template de onde a versão 3D nova entra quando eu tiver um modelo próprio pronto.
+### 1. Pré-requisitos
 
-## Documentação
+Instale [Git](https://git-scm.com/downloads) e [Docker Desktop](https://www.docker.com/products/docker-desktop/). No Windows, habilite o WSL 2 solicitado pelo instalador e use containers Linux. Abra o Docker Desktop e aguarde o motor iniciar.
 
-| Arquivo | Conteúdo |
-|---------|----------|
-| [docs/REQUISITOS_PRODUTO.txt](docs/REQUISITOS_PRODUTO.txt) | O que o produto deve fazer (texto original — referência) |
-| [docs/ARQUITETURA.txt](docs/ARQUITETURA.txt) | Stack, domínio, APIs, roadmap técnico |
-| [docs/DESENVOLVIMENTO.txt](docs/DESENVOLVIMENTO.txt) | Guia para dev/IA: estado, checklist, convenções |
-| [docs/FRONTEND.txt](docs/FRONTEND.txt) | Guia do frontend: stack, padrões, testes, CI |
-| [docs/DEPLOY-AWS.txt](docs/DEPLOY-AWS.txt) | Deploy: Docker + RDS MySQL (App Runner / ECS / Beanstalk) |
+Confira no terminal:
 
-**Para agentes de IA:** ler `docs/DESENVOLVIMENTO.txt` antes de codar.
+```powershell
+git --version
+docker version
+docker compose version
+```
 
-## Status atual
+Não é necessário instalar Python, Node.js ou MySQL no computador para rodar a aplicação pelo Docker.
 
-- **Fase:** 0 (Fundação) — backend Python em [`Backend/app`](Backend/app)
-- **Ambiente:** Python 3.12, Node 22, MySQL 8 (`ias_dev`)
-- **Camada 1 (backend):** concluída (CRUD, alocações, views, conflitos, audit log)
-- **Frontend:** [`Frontend/`](Frontend/) — React 19 + Vite 6 (dev em http://localhost:5173)
-- **Backend Fase 0:** concluída (tenant, user, JWT, CI, RN-003, capacity básico)
-- **Roadmap:** [`docs/roadmap/`](docs/roadmap/)
-- **Deploy:** Docker na raiz — [`docs/DEPLOY-AWS.txt`](docs/DEPLOY-AWS.txt)
+### 2. Baixar o projeto
 
-## Estado atual (MVP) — decisões conscientes
+```powershell
+git clone https://github.com/Samuelblew/SAS_Pythom.git
+cd SAS_Pythom
+```
 
-Este projeto está em fase de MVP. As simplificações abaixo são intencionais, não lacunas percebidas tarde — cada uma tem um motivo para a fase atual e um caminho já mapeado para evoluir.
+Também é possível baixar o ZIP pelo GitHub, extrair e abrir um terminal na pasta que contém `compose.yaml`.
 
-| Decisão atual | Por que faz sentido no MVP | Evolução planejada |
-|----------------|------------------------------|----------------------|
-| Autenticação mock (`POST /auth/dev-token`, sem hash de senha, sem `[Authorize]` nas rotas) | Validar o domínio (alocação, capacidade, matching) antes de fechar autenticação completa | Login real com hash de senha e `[Authorize]` por rota (Fase 0 em andamento) |
-| Tenant resolvido pelo header `X-Tenant-Id` | Permite testar multi-tenant sem depender de login pronto | Tenant extraído de claim no JWT — isolamento não depende do cliente informar o header corretamente |
-| Testes de integração ainda centrados no domínio | Ciclo de feedback rápido no MVP | Testcontainers + MySQL real, para validar FK, unique index e SQL |
-| Detecção de sobrealocação (RN-001) calculada em memória (LINQ sobre as alocações carregadas) | Suficiente na escala de uma demo | Mover para agregação no banco quando o volume de dados justificar |
-| Sem dado de exemplo (seed) e sem deploy público ainda | Foco até aqui foi Camada 1 (backend) e Fase 0 | Seed de demonstração + deploy AWS (`docs/DEPLOY-AWS.txt`) |
+### 3. Construir e iniciar
 
-## Stack resumida
+```powershell
+docker compose up -d --build --wait --wait-timeout 240
+docker compose ps
+```
 
-- Backend: [`Backend/`](Backend/) — Python 3.12, FastAPI, SQLAlchemy, MySQL
-- Frontend: [`Frontend/`](Frontend/) — React 19, Vite 6, TypeScript, Tailwind, TanStack Query
-- Banco local: MySQL 8 (`ias_dev` em localhost:3306)
-- Produção: Docker (API + site na mesma imagem) + Amazon RDS MySQL
+A primeira execução baixa as imagens e instala as dependências; pode levar alguns minutos. Ao terminar, `frontend`, `backend` e `db` devem aparecer como **healthy**.
+
+| Acesso | Endereço |
+|---|---|
+| Aplicação | http://localhost:5173 |
+| Documentação interativa da API (Swagger) | http://localhost:5203/swagger |
+| Verificação de saúde e conexão ao banco | http://localhost:5203/api/v1/health |
+
+### 4. Criar sua organização
+
+O banco é criado automaticamente e começa vazio. Cada instalação gera seus próprios IDs: não é necessário copiar arquivos `.env` nem usar um ID de outra máquina.
+
+1. Abra o Swagger e localize `POST /api/v1/tenants`.
+2. Clique em **Try it out** e envie:
+
+```json
+{"name": "Minha organizacao"}
+```
+
+3. Clique em **Execute** e copie o campo `id` da resposta HTTP 201.
+4. Abra o site, clique na **engrenagem** no cabeçalho e cole o ID no campo **Tenant**.
+5. Cadastre competências, profissionais e clientes; depois crie projetos e suas alocações.
+
+Alternativa no PowerShell para criar a organização:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5203/api/v1/tenants -ContentType 'application/json' -Body '{"name":"Minha organizacao"}'
+```
+
+Use um nome diferente para cada organização. O navegador guarda o Tenant ID localmente; outro navegador precisa receber o mesmo ID para acessar os mesmos dados.
+
+## Como funciona
+
+```text
+Navegador → frontend (React + Nginx, porta 5173)
+               └─ /api/ → backend/API (FastAPI, porta 5203)
+                              └─ MySQL 8 (rede interna Docker)
+```
+
+A API faz parte do backend. São três containers, iniciados pelo Docker Compose com verificações de saúde. O banco fica em um volume persistente e não precisa de MySQL instalado no Windows.
+
+| Parte | Tecnologias |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, TanStack Query |
+| Backend/API | Python 3.12, FastAPI, SQLAlchemy |
+| Banco | MySQL 8 |
+| Execução local | Docker Compose e Nginx |
+
+## Parar, atualizar e consultar logs
+
+Execute sempre na pasta do projeto:
+
+```powershell
+docker compose down                 # Para sem apagar os dados
+docker compose up -d --wait          # Inicia novamente
+docker compose logs --tail 100 backend
+docker compose logs --tail 100 db
+```
+
+Para atualizar uma instalação feita com Git:
+
+```powershell
+git pull
+docker compose up -d --build --wait --wait-timeout 240
+```
+
+**`docker compose down -v` apaga o banco deste ambiente.** Use apenas se quiser começar do zero; depois será necessário criar a organização novamente.
+
+## Testes e integração contínua
+
+A pipeline do GitHub Actions executa:
+
+- **Frontend CI:** instalação com lockfile, lint, 22 testes e build.
+- **Backend CI:** instalação das dependências e compilação Python.
+- **Docker Integration:** construção das imagens, inicialização com banco vazio, testes HTTP de integração e verificação de persistência após reiniciar a API e o banco.
+
+O teste de integração passa pelo proxy do frontend e verifica arquivos do site, Swagger, saúde do banco, criação e edição de dados, alocações, cálculo de capacidade, bloqueio de sobrealocação, isolamento entre organizações, auditoria e exclusão.
+
+Para reproduzir o teste com Python 3.11 ou superior instalado e a aplicação em execução:
+
+```powershell
+python scripts/test-integration.py
+```
+
+Sem instalar Python, no PowerShell:
+
+```powershell
+Get-Content -Raw scripts/test-integration.py | docker compose exec -T backend python - --base-url http://frontend
+```
+
+Os testes criam organizações exclusivas, removem os cadastros de negócio ao concluir e mantêm os tenants e registros de auditoria. Para avaliação isolada, utilize um ambiente de teste, conforme [o guia Docker](docs/DOCKER-LOCAL.md).
+
+## Problemas comuns
+
+- **Docker não conecta:** abra o Docker Desktop e aguarde iniciar; confirme que está em modo de containers Linux.
+- **Porta ocupada:** no PowerShell, execute `$env:IAS_WEB_PORT="5174"` e `$env:IAS_API_PORT="5204"` antes do comando de inicialização. Depois use essas portas nos endereços. Em outros terminais, defina as mesmas variáveis pelo mecanismo correspondente.
+- **Site pede tenant:** crie a organização pelo Swagger e informe o ID na engrenagem. O banco de outra instalação não é copiado automaticamente.
+- **Falha na inicialização:** consulte `docker compose logs --tail 100` e tente `docker compose up -d --build --wait --wait-timeout 240` novamente.
+
+## Escopo atual
+
+Projeto acadêmico em estágio de MVP. A autenticação usa um fluxo de desenvolvimento, e o tenant pode ser informado pelo cliente. As credenciais do Compose são exclusivas para uso local; site e API ficam vinculados a `127.0.0.1`, e o MySQL não publica porta no computador. Para disponibilizar em produção, é necessário implementar autenticação e autorização completas e configurar segredos adequados.
+
+## Estrutura
+
+```text
+Frontend/          Interface e configuração do Nginx
+Backend/app/       API e regras de negócio
+compose.yaml       Ambiente local completo
+scripts/           Testes de integração e utilitários
+.github/workflows/ Pipelines de CI
+Dockerfile         Imagem alternativa com site e API juntos
+```
+
+A documentação em `docs/` contém também registros históricos de arquiteturas anteriores; para instalar a versão Python atual, siga este README e [DOCKER-LOCAL.md](docs/DOCKER-LOCAL.md).

@@ -68,7 +68,7 @@ def _grouped(items, key):
 
 
 @router.get("/api/v1/capacity/overview")
-def capacity_overview(from_: date = Query(..., alias="from"), to: date = Query(...), benchThreshold: Decimal = Decimal("50"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def capacity_overview(from_: date = Query(..., alias="from"), to: date = Query(...), benchThreshold: Decimal = Decimal("50"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to)
     alloc_by = _grouped(allocations, lambda a: a.person_id)
     unav_by = _grouped(unavailabilities, lambda u: u.person_id)
@@ -129,7 +129,7 @@ def capacity_overview(from_: date = Query(..., alias="from"), to: date = Query(.
 
 
 @router.get("/api/v1/capacity/people/{person_id}/availability")
-def person_availability(person_id: UUID, from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def person_availability(person_id: UUID, from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     person = get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     allocations = by_tenant(
         db.query(Allocation).filter(Allocation.person_id == person.id, Allocation.start_date <= to, Allocation.end_date >= from_),
@@ -166,7 +166,7 @@ def person_availability(person_id: UUID, from_: date = Query(..., alias="from"),
 
 
 @router.get("/api/v1/capacity/projects/{project_id}/staffing-gaps")
-def staffing_gaps(project_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def staffing_gaps(project_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     project = _load_project(db, tenant_id, project_id)
     needs = by_tenant(db.query(AllocationNeed).filter(AllocationNeed.project_id == project.id), AllocationNeed, tenant_id).order_by(AllocationNeed.role).all()
     allocations = by_tenant(db.query(Allocation).filter(Allocation.project_id == project.id), Allocation, tenant_id).all()
@@ -186,7 +186,7 @@ def staffing_gaps(project_id: UUID, db: Session = Depends(get_db), tenant_id: st
 
 
 @router.get("/api/v1/capacity/people-available")
-def people_available(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("1"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def people_available(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("1"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to)
     alloc_by = _grouped(allocations, lambda a: a.person_id)
     unav_by = _grouped(unavailabilities, lambda u: u.person_id)
@@ -209,7 +209,7 @@ def people_available(from_: date = Query(..., alias="from"), to: date = Query(..
 
 
 @router.get("/api/v1/capacity/bench")
-def capacity_bench(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("50"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def capacity_bench(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("50"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to)
     alloc_by = _grouped(allocations, lambda a: a.person_id)
     unav_by = _grouped(unavailabilities, lambda u: u.person_id)
@@ -234,7 +234,7 @@ def capacity_bench(from_: date = Query(..., alias="from"), to: date = Query(...)
 
 
 @router.get("/api/v1/capacity/future-gaps")
-def future_gaps(from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def future_gaps(from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to)
     needs = (
         by_tenant(db.query(AllocationNeed), AllocationNeed, tenant_id)
@@ -305,7 +305,7 @@ def future_gaps(from_: date = Query(..., alias="from"), to: date = Query(...), d
 
 
 @router.get("/api/v1/capacity/skills-occupation")
-def skills_occupation(from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def skills_occupation(from_: date = Query(..., alias="from"), to: date = Query(...), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to, with_skills=True)
     alloc_by = _grouped(allocations, lambda a: a.person_id)
     unav_by = _grouped(unavailabilities, lambda u: u.person_id)
@@ -343,7 +343,7 @@ def skills_occupation(from_: date = Query(..., alias="from"), to: date = Query(.
 
 
 @router.get("/api/v1/capacity/projects-understaffed")
-def capacity_understaffed(db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def capacity_understaffed(db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return {"items": understaffed_items(db, tenant_id)}
 
 
@@ -355,7 +355,7 @@ def _project_financials(project, allocations, from_date, to_date, threshold: Dec
 
 
 @router.get("/api/v1/projects/{item_id}/financials")
-def project_financials(item_id: UUID, from_: date | None = Query(None, alias="from"), to: date | None = None, marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def project_financials(item_id: UUID, from_: date | None = Query(None, alias="from"), to: date | None = None, marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     project = _load_project(db, tenant_id, item_id)
     allocations = (
         by_tenant(db.query(Allocation).filter(Allocation.project_id == project.id), Allocation, tenant_id)
@@ -422,7 +422,7 @@ def _financial_summaries(db, tenant_id, from_date, to_date, threshold: Decimal):
 
 
 @router.get("/api/v1/financials/overview")
-def financial_overview(from_: date | None = Query(None, alias="from"), to: date | None = None, marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def financial_overview(from_: date | None = Query(None, alias="from"), to: date | None = None, marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     period_start, period_end, summaries = _financial_summaries(db, tenant_id, from_, to, marginAlertThreshold)
     projects = []
     for item in summaries:
@@ -471,7 +471,7 @@ def financial_overview(from_: date | None = Query(None, alias="from"), to: date 
 
 
 @router.get("/api/v1/financials/profitability")
-def profitability(from_: date | None = Query(None, alias="from"), to: date | None = None, groupBy: str = "Client", marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def profitability(from_: date | None = Query(None, alias="from"), to: date | None = None, groupBy: str = "Client", marginAlertThreshold: Decimal = Decimal("15"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     period_start, period_end, summaries = _financial_summaries(db, tenant_id, from_, to, marginAlertThreshold)
     groups_map: dict = defaultdict(list)
     for item in summaries:
@@ -509,7 +509,7 @@ def profitability(from_: date | None = Query(None, alias="from"), to: date | Non
 
 
 @router.get("/api/v1/financials/bench")
-def financial_bench(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("50"), db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def financial_bench(from_: date = Query(..., alias="from"), to: date = Query(...), minAvailablePercent: Decimal = Decimal("50"), db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     from app.domain import hourly_rate
     people, allocations, unavailabilities = _period_data(db, tenant_id, from_, to)
     alloc_by = _grouped(allocations, lambda a: a.person_id)
@@ -552,7 +552,7 @@ def financial_bench(from_: date = Query(..., alias="from"), to: date = Query(...
 
 
 @router.post("/api/v1/simulations/project-feasibility")
-def project_feasibility(body: FeasibilityIn, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def project_feasibility(body: FeasibilityIn, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     if body.duration_months < 1 or body.duration_months > 36:
         raise ValidationAppError("durationMonths deve estar entre 1 e 36")
     people, allocations, unavailabilities = _period_data(
@@ -569,7 +569,7 @@ def project_feasibility(body: FeasibilityIn, db: Session = Depends(get_db), tena
 
 
 @router.post("/api/v1/simulations/allocation-margin")
-def allocation_margin(body: MarginSimIn, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def allocation_margin(body: MarginSimIn, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     project = _load_project(db, tenant_id, body.project_id)
     person = get_or_404(db, Person, body.person_id, tenant_id, "Pessoa")
     allocations = (
@@ -628,7 +628,7 @@ def audit_logs(
     action: str | None = None,
     from_: date | None = Query(None, alias="from"),
     to: date | None = None,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
 ):
     page, size = parse_page(page, pageSize)

@@ -119,7 +119,7 @@ def validate_allocation(db, tenant_id, body: AllocationWrite, exclude_id: str | 
 
 
 @router.get("/api/v1/projects")
-def list_projects(page: int = 1, pageSize: int = 20, clientId: UUID | None = None, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_projects(page: int = 1, pageSize: int = 20, clientId: UUID | None = None, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Project), Project, tenant_id).options(joinedload(Project.client))
     if clientId:
@@ -165,17 +165,17 @@ def understaffed_items(db: Session, tenant_id: str) -> list[dict]:
 
 
 @router.get("/api/v1/projects/understaffed")
-def projects_understaffed(db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def projects_understaffed(db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return {"items": understaffed_items(db, tenant_id)}
 
 
 @router.get("/api/v1/projects/{item_id}")
-def get_project(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_project(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return project_out(_load_project(db, tenant_id, item_id))
 
 
 @router.post("/api/v1/projects", status_code=201)
-def create_project(body: ProjectWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_project(body: ProjectWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Client, body.client_id, tenant_id, "Cliente")
     item = Project(
         id=new_id(),
@@ -200,7 +200,7 @@ def create_project(body: ProjectWrite, db: Session = Depends(get_db), tenant_id:
 
 
 @router.put("/api/v1/projects/{item_id}")
-def update_project(item_id: UUID, body: ProjectWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_project(item_id: UUID, body: ProjectWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Project, item_id, tenant_id, "Projeto")
     get_or_404(db, Client, body.client_id, tenant_id, "Cliente")
     item.client_id = str(body.client_id)
@@ -220,14 +220,14 @@ def update_project(item_id: UUID, body: ProjectWrite, db: Session = Depends(get_
 
 
 @router.delete("/api/v1/projects/{item_id}", status_code=204)
-def delete_project(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_project(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Project, item_id, tenant_id, "Projeto")
     soft_delete(item)
     audit(db, tenant_id, "Project", item.id, "Deleted", ctx.actor_id)
 
 
 @router.get("/api/v1/projects/{item_id}/people")
-def project_people(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def project_people(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     project = _load_project(db, tenant_id, item_id)
     allocations = (
         by_tenant(db.query(Allocation).filter(Allocation.project_id == project.id), Allocation, tenant_id)
@@ -266,7 +266,7 @@ def project_people(item_id: UUID, db: Session = Depends(get_db), tenant_id: str 
 
 
 @router.get("/api/v1/people/{item_id}/projects")
-def person_projects(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def person_projects(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     person = get_or_404(db, Person, item_id, tenant_id, "Pessoa")
     allocations = (
         by_tenant(db.query(Allocation).filter(Allocation.person_id == person.id), Allocation, tenant_id)
@@ -303,7 +303,7 @@ def person_projects(item_id: UUID, db: Session = Depends(get_db), tenant_id: str
 
 
 @router.get("/api/v1/allocation-needs")
-def list_needs(page: int = 1, pageSize: int = 20, projectId: UUID | None = None, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_needs(page: int = 1, pageSize: int = 20, projectId: UUID | None = None, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(AllocationNeed), AllocationNeed, tenant_id).options(joinedload(AllocationNeed.project))
     if projectId:
@@ -314,12 +314,12 @@ def list_needs(page: int = 1, pageSize: int = 20, projectId: UUID | None = None,
 
 
 @router.get("/api/v1/allocation-needs/{item_id}")
-def get_need(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_need(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return need_out(_load_need(db, tenant_id, item_id))
 
 
 @router.post("/api/v1/allocation-needs", status_code=201)
-def create_need(body: NeedWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_need(body: NeedWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Project, body.project_id, tenant_id, "Projeto")
     item = AllocationNeed(
         id=new_id(),
@@ -344,7 +344,7 @@ def create_need(body: NeedWrite, db: Session = Depends(get_db), tenant_id: str =
 
 
 @router.put("/api/v1/allocation-needs/{item_id}")
-def update_need(item_id: UUID, body: NeedWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_need(item_id: UUID, body: NeedWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, AllocationNeed, item_id, tenant_id, "Necessidade")
     get_or_404(db, Project, body.project_id, tenant_id, "Projeto")
     item.project_id = str(body.project_id)
@@ -364,7 +364,7 @@ def update_need(item_id: UUID, body: NeedWrite, db: Session = Depends(get_db), t
 
 
 @router.delete("/api/v1/allocation-needs/{item_id}", status_code=204)
-def delete_need(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_need(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, AllocationNeed, item_id, tenant_id, "Necessidade")
     soft_delete(item)
     audit(db, tenant_id, "AllocationNeed", item.id, "Deleted", ctx.actor_id)
@@ -406,7 +406,7 @@ def need_candidates(
     maxResults: int = 20,
     minAvailablePercent: Decimal | None = None,
     excludePeopleOnProject: bool = False,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
 ):
     need = _load_need(db, tenant_id, item_id)
@@ -420,7 +420,7 @@ def project_matching(
     minAvailablePercent: Decimal | None = None,
     excludePeopleOnProject: bool = False,
     openNeedsOnly: bool = True,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
 ):
     project = _load_project(db, tenant_id, item_id)
@@ -432,7 +432,7 @@ def project_matching(
 
 
 @router.get("/api/v1/allocation-needs/{item_id}/matching-suggestions")
-def list_suggestions(item_id: UUID, page: int = 1, pageSize: int = 20, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_suggestions(item_id: UUID, page: int = 1, pageSize: int = 20, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     _load_need(db, tenant_id, item_id)
     page, size = parse_page(page, pageSize)
     query = (
@@ -445,7 +445,7 @@ def list_suggestions(item_id: UUID, page: int = 1, pageSize: int = 20, db: Sessi
 
 
 @router.post("/api/v1/allocation-needs/{item_id}/matching-suggestions", status_code=201)
-def create_suggestion(item_id: UUID, body: SuggestionWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_suggestion(item_id: UUID, body: SuggestionWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     need = _load_need(db, tenant_id, item_id)
     get_or_404(db, Person, body.person_id, tenant_id, "Pessoa")
     item = MatchingSuggestion(
@@ -471,7 +471,7 @@ def create_suggestion(item_id: UUID, body: SuggestionWrite, db: Session = Depend
 
 
 @router.get("/api/v1/allocations")
-def list_allocations(page: int = 1, pageSize: int = 20, personId: UUID | None = None, projectId: UUID | None = None, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_allocations(page: int = 1, pageSize: int = 20, personId: UUID | None = None, projectId: UUID | None = None, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Allocation), Allocation, tenant_id).options(joinedload(Allocation.person), joinedload(Allocation.project))
     if personId:
@@ -484,7 +484,7 @@ def list_allocations(page: int = 1, pageSize: int = 20, personId: UUID | None = 
 
 
 @router.get("/api/v1/allocations/conflicts")
-def list_conflicts(personId: UUID | None = None, projectId: UUID | None = None, from_: date | None = Query(None, alias="from"), to: date | None = None, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_conflicts(personId: UUID | None = None, projectId: UUID | None = None, from_: date | None = Query(None, alias="from"), to: date | None = None, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     query = by_tenant(db.query(Allocation), Allocation, tenant_id).options(joinedload(Allocation.person), joinedload(Allocation.project))
     if personId:
         query = query.filter(Allocation.person_id == str(personId))
@@ -533,12 +533,12 @@ def list_conflicts(personId: UUID | None = None, projectId: UUID | None = None, 
 
 
 @router.get("/api/v1/allocations/{item_id}")
-def get_allocation(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_allocation(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return allocation_out(_load_allocation(db, tenant_id, item_id))
 
 
 @router.post("/api/v1/allocations", status_code=201)
-def create_allocation(body: AllocationWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_allocation(body: AllocationWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     validate_allocation(db, tenant_id, body)
     item = Allocation(
         id=new_id(),
@@ -561,7 +561,7 @@ def create_allocation(body: AllocationWrite, db: Session = Depends(get_db), tena
 
 
 @router.put("/api/v1/allocations/{item_id}")
-def update_allocation(item_id: UUID, body: AllocationWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_allocation(item_id: UUID, body: AllocationWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Allocation, item_id, tenant_id, "Alocação")
     previous = item.project_id
     validate_allocation(db, tenant_id, body, item.id)
@@ -582,7 +582,7 @@ def update_allocation(item_id: UUID, body: AllocationWrite, db: Session = Depend
 
 
 @router.delete("/api/v1/allocations/{item_id}", status_code=204)
-def delete_allocation(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_allocation(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Allocation, item_id, tenant_id, "Alocação")
     project_id = item.project_id
     soft_delete(item)

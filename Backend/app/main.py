@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -67,8 +68,12 @@ async def validation_handler(_: Request, exc: RequestValidationError):
     return problem(400, "Erro de validação", "; ".join(messages))
 
 
+logger = logging.getLogger("ias")
+
+
 @app.exception_handler(Exception)
-async def unhandled(_: Request, __: Exception):
+async def unhandled(_: Request, exc: Exception):
+    logger.exception("Unhandled API error: %s", exc)
     return problem(500, "Erro interno", "Ocorreu um erro inesperado.")
 
 

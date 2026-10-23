@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 @router.get("/api/v1/health")
-def health(db: Session = Depends(get_db)):
+def health(db: Session = Depends(get_db, scope="function")):
     try:
         db.execute(text("SELECT 1"))
         return {"status": "healthy", "service": "IAS.Api", "database": "connected"}

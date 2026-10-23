@@ -8,6 +8,8 @@ Backend/src
 Backend/tests
 **/.env
 **/.env.local
+**/.env.*
+!**/.env.example
 docs
 infra
 *.md

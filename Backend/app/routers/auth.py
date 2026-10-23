@@ -18,7 +18,7 @@ router = APIRouter()
 
 
 @router.post("/api/v1/tenants", status_code=201)
-def create_tenant(body: TenantCreate, db: Session = Depends(get_db)):
+def create_tenant(body: TenantCreate, db: Session = Depends(get_db, scope="function")):
     name = body.name.strip()
     exists = alive(db.query(Tenant).filter(Tenant.name == name), Tenant).first()
     if exists:
@@ -31,7 +31,7 @@ def create_tenant(body: TenantCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/api/v1/tenants/{item_id}")
-def get_tenant(item_id: UUID, db: Session = Depends(get_db)):
+def get_tenant(item_id: UUID, db: Session = Depends(get_db, scope="function")):
     item = alive(db.query(Tenant).filter(Tenant.id == str(item_id)), Tenant).first()
     if not item:
         raise NotFoundError(f"Tenant '{item_id}' não encontrado.")
@@ -39,7 +39,7 @@ def get_tenant(item_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/api/v1/auth/dev-token")
-def dev_token(body: DevTokenIn, db: Session = Depends(get_db)):
+def dev_token(body: DevTokenIn, db: Session = Depends(get_db, scope="function")):
     settings = get_settings()
     if not settings.is_dev:
         raise NotFoundError("Não encontrado")
@@ -75,7 +75,7 @@ def dev_token(body: DevTokenIn, db: Session = Depends(get_db)):
 def list_users(
     page: int = 1,
     pageSize: int = 20,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
 ):
     page, page_size = parse_page(page, pageSize)
@@ -85,14 +85,14 @@ def list_users(
 
 
 @router.get("/api/v1/users/{item_id}")
-def get_user(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_user(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return user_out(get_or_404(db, User, item_id, tenant_id, "Usuário"))
 
 
 @router.post("/api/v1/users", status_code=201)
 def create_user(
     body: UserCreate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
     ctx: RequestContext = Depends(get_ctx),
 ):
@@ -120,7 +120,7 @@ def create_user(
 def update_user(
     item_id: UUID,
     body: UserUpdate,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
     ctx: RequestContext = Depends(get_ctx),
 ):
@@ -142,7 +142,7 @@ def update_user(
 @router.delete("/api/v1/users/{item_id}", status_code=204)
 def delete_user(
     item_id: UUID,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_db, scope="function"),
     tenant_id: str = Depends(require_tenant),
     ctx: RequestContext = Depends(get_ctx),
 ):

@@ -26,6 +26,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, expi
 
 
 def get_db() -> Generator[Session, None, None]:
+    # Routes use scope="function": commit/rollback must finish before HTTP success.
     db = SessionLocal()
     try:
         yield db

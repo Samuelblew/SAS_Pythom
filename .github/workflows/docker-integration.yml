@@ -1,0 +1,32 @@
+name: Docker Integration
+
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and start fresh stack
+        run: docker compose up -d --build --wait --wait-timeout 240
+      - name: Test data flow through frontend proxy, API and MySQL
+        run: python scripts/test-integration.py --state-file /tmp/ias-test-state.json
+      - name: Restart API and database preserving data
+        run: |
+          docker compose restart db backend
+          docker compose up -d --wait --wait-timeout 240
+          python scripts/test-integration.py --state-file /tmp/ias-test-state.json --verify-state
+          python scripts/test-integration.py
+      - name: Container logs
+        if: always()
+        run: docker compose logs --no-color --tail 150
+      - name: Clean up
+        if: always()
+        run: docker compose down -v

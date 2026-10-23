@@ -31,7 +31,7 @@ router = APIRouter()
 
 
 @router.get("/api/v1/skills")
-def list_skills(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_skills(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Skill), Skill, tenant_id).order_by(Skill.name)
     items, total = paginate(query, page, size)
@@ -39,12 +39,12 @@ def list_skills(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db)
 
 
 @router.get("/api/v1/skills/{item_id}")
-def get_skill(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_skill(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return skill_out(get_or_404(db, Skill, item_id, tenant_id, "Skill"))
 
 
 @router.post("/api/v1/skills", status_code=201)
-def create_skill(body: SkillCreate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_skill(body: SkillCreate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     name = body.name.strip()
     if by_tenant(db.query(Skill).filter(Skill.name == name), Skill, tenant_id).first():
         raise ConflictError(f"Já existe uma skill com o nome '{name}'.")
@@ -56,7 +56,7 @@ def create_skill(body: SkillCreate, db: Session = Depends(get_db), tenant_id: st
 
 
 @router.put("/api/v1/skills/{item_id}")
-def update_skill(item_id: UUID, body: SkillCreate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_skill(item_id: UUID, body: SkillCreate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Skill, item_id, tenant_id, "Skill")
     name = body.name.strip()
     if by_tenant(db.query(Skill).filter(Skill.name == name, Skill.id != item.id), Skill, tenant_id).first():
@@ -69,14 +69,14 @@ def update_skill(item_id: UUID, body: SkillCreate, db: Session = Depends(get_db)
 
 
 @router.delete("/api/v1/skills/{item_id}", status_code=204)
-def delete_skill(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_skill(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Skill, item_id, tenant_id, "Skill")
     soft_delete(item)
     audit(db, tenant_id, "Skill", item.id, "Deleted", ctx.actor_id)
 
 
 @router.get("/api/v1/clients")
-def list_clients(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_clients(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Client), Client, tenant_id).order_by(Client.name)
     items, total = paginate(query, page, size)
@@ -88,12 +88,12 @@ def list_clients(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db
 
 
 @router.get("/api/v1/clients/{item_id}")
-def get_client(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_client(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return client_out(get_or_404(db, Client, item_id, tenant_id, "Cliente"))
 
 
 @router.post("/api/v1/clients", status_code=201)
-def create_client(body: ClientCreate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_client(body: ClientCreate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     name = body.name.strip()
     if by_tenant(db.query(Client).filter(Client.name == name), Client, tenant_id).first():
         raise ConflictError(f"Já existe um cliente com o nome '{name}'.")
@@ -105,7 +105,7 @@ def create_client(body: ClientCreate, db: Session = Depends(get_db), tenant_id: 
 
 
 @router.put("/api/v1/clients/{item_id}")
-def update_client(item_id: UUID, body: ClientUpdate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_client(item_id: UUID, body: ClientUpdate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Client, item_id, tenant_id, "Cliente")
     name = body.name.strip()
     if by_tenant(db.query(Client).filter(Client.name == name, Client.id != item.id), Client, tenant_id).first():
@@ -118,7 +118,7 @@ def update_client(item_id: UUID, body: ClientUpdate, db: Session = Depends(get_d
 
 
 @router.delete("/api/v1/clients/{item_id}", status_code=204)
-def delete_client(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_client(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Client, item_id, tenant_id, "Cliente")
     soft_delete(item)
     audit(db, tenant_id, "Client", item.id, "Deleted", ctx.actor_id)
@@ -137,7 +137,7 @@ def _load_person(db, tenant_id, person_id) -> Person:
 
 
 @router.get("/api/v1/people")
-def list_people(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_people(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Person), Person, tenant_id).options(joinedload(Person.skills)).order_by(Person.name)
     items, total = paginate(query, page, size)
@@ -145,12 +145,12 @@ def list_people(page: int = 1, pageSize: int = 20, db: Session = Depends(get_db)
 
 
 @router.get("/api/v1/people/{item_id}")
-def get_person(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_person(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     return person_out(_load_person(db, tenant_id, item_id))
 
 
 @router.post("/api/v1/people", status_code=201)
-def create_person(body: PersonWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_person(body: PersonWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = Person(
         id=new_id(),
         tenant_id=tenant_id,
@@ -172,7 +172,7 @@ def create_person(body: PersonWrite, db: Session = Depends(get_db), tenant_id: s
 
 
 @router.put("/api/v1/people/{item_id}")
-def update_person(item_id: UUID, body: PersonWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_person(item_id: UUID, body: PersonWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Person, item_id, tenant_id, "Pessoa")
     item.name = body.name.strip()
     item.job_title = body.job_title
@@ -189,7 +189,7 @@ def update_person(item_id: UUID, body: PersonWrite, db: Session = Depends(get_db
 
 
 @router.delete("/api/v1/people/{item_id}", status_code=204)
-def delete_person(item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_person(item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     item = get_or_404(db, Person, item_id, tenant_id, "Pessoa")
     for skill in by_tenant(db.query(PersonSkill).filter(PersonSkill.person_id == item.id), PersonSkill, tenant_id).all():
         soft_delete(skill)
@@ -198,7 +198,7 @@ def delete_person(item_id: UUID, db: Session = Depends(get_db), tenant_id: str =
 
 
 @router.post("/api/v1/people/{person_id}/skills", status_code=201)
-def add_person_skill(person_id: UUID, body: PersonSkillCreate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def add_person_skill(person_id: UUID, body: PersonSkillCreate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     person = get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     skill = get_or_404(db, Skill, body.skill_id, tenant_id, "Skill")
     exists = by_tenant(
@@ -226,7 +226,7 @@ def add_person_skill(person_id: UUID, body: PersonSkillCreate, db: Session = Dep
 
 
 @router.put("/api/v1/people/{person_id}/skills/{person_skill_id}")
-def update_person_skill(person_id: UUID, person_skill_id: UUID, body: PersonSkillUpdate, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_person_skill(person_id: UUID, person_skill_id: UUID, body: PersonSkillUpdate, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     item = (
         by_tenant(db.query(PersonSkill), PersonSkill, tenant_id)
@@ -245,7 +245,7 @@ def update_person_skill(person_id: UUID, person_skill_id: UUID, body: PersonSkil
 
 
 @router.delete("/api/v1/people/{person_id}/skills/{person_skill_id}", status_code=204)
-def delete_person_skill(person_id: UUID, person_skill_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_person_skill(person_id: UUID, person_skill_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     item = by_tenant(
         db.query(PersonSkill).filter(PersonSkill.id == str(person_skill_id), PersonSkill.person_id == str(person_id)),
@@ -259,7 +259,7 @@ def delete_person_skill(person_id: UUID, person_skill_id: UUID, db: Session = De
 
 
 @router.get("/api/v1/people/{person_id}/unavailabilities")
-def list_unavailabilities(person_id: UUID, page: int = 1, pageSize: int = 20, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def list_unavailabilities(person_id: UUID, page: int = 1, pageSize: int = 20, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     page, size = parse_page(page, pageSize)
     query = by_tenant(db.query(Unavailability).filter(Unavailability.person_id == str(person_id)), Unavailability, tenant_id).order_by(Unavailability.start_date.desc())
@@ -268,7 +268,7 @@ def list_unavailabilities(person_id: UUID, page: int = 1, pageSize: int = 20, db
 
 
 @router.get("/api/v1/people/{person_id}/unavailabilities/{item_id}")
-def get_unavailability(person_id: UUID, item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant)):
+def get_unavailability(person_id: UUID, item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     item = by_tenant(
         db.query(Unavailability).filter(Unavailability.id == str(item_id), Unavailability.person_id == str(person_id)),
@@ -296,7 +296,7 @@ def _overlap_unavailability(db, tenant_id, person_id, start, end, exclude_id=Non
 
 
 @router.post("/api/v1/people/{person_id}/unavailabilities", status_code=201)
-def create_unavailability(person_id: UUID, body: UnavailabilityWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def create_unavailability(person_id: UUID, body: UnavailabilityWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     if _overlap_unavailability(db, tenant_id, person_id, body.start_date, body.end_date):
         raise ConflictError("Já existe indisponibilidade no período informado.")
@@ -317,7 +317,7 @@ def create_unavailability(person_id: UUID, body: UnavailabilityWrite, db: Sessio
 
 
 @router.put("/api/v1/people/{person_id}/unavailabilities/{item_id}")
-def update_unavailability(person_id: UUID, item_id: UUID, body: UnavailabilityWrite, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def update_unavailability(person_id: UUID, item_id: UUID, body: UnavailabilityWrite, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     item = by_tenant(
         db.query(Unavailability).filter(Unavailability.id == str(item_id), Unavailability.person_id == str(person_id)),
@@ -338,7 +338,7 @@ def update_unavailability(person_id: UUID, item_id: UUID, body: UnavailabilityWr
 
 
 @router.delete("/api/v1/people/{person_id}/unavailabilities/{item_id}", status_code=204)
-def delete_unavailability(person_id: UUID, item_id: UUID, db: Session = Depends(get_db), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
+def delete_unavailability(person_id: UUID, item_id: UUID, db: Session = Depends(get_db, scope="function"), tenant_id: str = Depends(require_tenant), ctx: RequestContext = Depends(get_ctx)):
     get_or_404(db, Person, person_id, tenant_id, "Pessoa")
     item = by_tenant(
         db.query(Unavailability).filter(Unavailability.id == str(item_id), Unavailability.person_id == str(person_id)),
