@@ -1,16 +1,26 @@
 # IAS — Intelligent Allocation System
 
-Ferramenta de gerenciamento para **gerentes de projetos** planejarem equipes e acompanharem a alocação de profissionais. O IAS reúne pessoas, competências, clientes e projetos para ajudar o gerente a identificar disponibilidade, distribuir trabalho, evitar sobrecarga e acompanhar custos e capacidade futura.
+## O que é esse projeto?
+
+O IAS é uma ferramenta de organização para **gerentes de projetos (GPs)**. A ideia é reunir em um só lugar as informações que o gerente precisa no dia a dia: quais projetos estão em andamento, quem são os clientes, quem faz parte da equipe, qual é a senioridade de cada pessoa e quem pode assumir uma nova demanda.
+
+Imagine que chegou um projeto e você precisa montar a equipe. No IAS, você consegue consultar os profissionais, ver suas competências e disponibilidade, definir quem vai trabalhar no projeto e quanto do tempo de cada pessoa será dedicado a ele. Isso ajuda a evitar colocar alguém em mais trabalho do que consegue atender e a perceber quando falta gente para uma entrega.
+
+O produto também ajuda a olhar para as próximas semanas: acompanhar a ocupação da equipe, identificar pessoas disponíveis e avaliar necessidades de contratação ou redistribuição. Há ainda visões de custos e margens e simulações para apoiar o planejamento do gerente.
 
 ## O que o sistema oferece
 
-- Cadastro de profissionais, competências, clientes e projetos.
-- Alocação de pessoas por período e percentual de dedicação.
-- Controle de indisponibilidades e bloqueio de sobrealocação.
-- Visões de capacidade, profissionais disponíveis e necessidades dos projetos.
-- Sugestões de profissionais por critérios determinísticos de compatibilidade.
-- Indicadores financeiros, simulações e histórico de alterações.
-- Separação dos dados por organização (tenant).
+- **Pessoas e competências:** listar profissionais, registrar cargo e senioridade e associar habilidades e níveis de conhecimento.
+- **Clientes e projetos:** organizar a carteira de clientes e acompanhar os projetos, seus períodos, prioridades e situação.
+- **Distribuição do trabalho:** definir quem participa de cada projeto, em qual função, por quanto tempo e com qual dedicação.
+- **Disponibilidade e conflitos:** acompanhar a capacidade da equipe e impedir que uma nova alocação ultrapasse o tempo disponível da pessoa.
+- **Necessidades e sugestões:** registrar os perfis que um projeto precisa e consultar sugestões de profissionais compatíveis.
+- **Planejamento e financeiro:** consultar custos e margens e simular se a equipe consegue atender uma nova demanda.
+- **Histórico e organizações:** consultar registros de alterações e manter os dados de cada organização separados.
+
+As telas de **Simulações** e **Financeiro** ficam disponíveis ao ativar **Opções ocultas** no menu de engrenagem do cabeçalho.
+
+> **Primeiro acesso:** depois de subir o Docker, é necessário criar sua organização no Swagger e informar o **Tenant ID** no site. O [tutorial abaixo](#4-primeiro-acesso-criar-a-organização-no-swagger-e-configurar-o-tenant-id) mostra cada etapa.
 
 ## Instalação rápida com Docker
 
@@ -52,28 +62,71 @@ A primeira execução baixa as imagens e instala as dependências; pode levar al
 | Documentação interativa da API (Swagger) | http://localhost:5203/swagger |
 | Verificação de saúde e conexão ao banco | http://localhost:5203/api/v1/health |
 
-### 4. Criar sua organização
+### 4. Primeiro acesso: criar a organização no Swagger e configurar o Tenant ID
 
-O banco é criado automaticamente e começa vazio. Cada instalação gera seus próprios IDs: não é necessário copiar arquivos `.env` nem usar um ID de outra máquina.
+O **tenant** representa sua organização dentro do sistema. O **Tenant ID** é o código que identifica essa organização e indica quais dados o site deve carregar. Nesta versão, essa configuração é feita manualmente uma vez por navegador.
 
-1. Abra o Swagger e localize `POST /api/v1/tenants`.
-2. Clique em **Try it out** e envie:
+O banco é criado automaticamente e começa vazio. Você vai criar sua própria organização; não precisa copiar arquivos `.env` ou usar um ID de outra instalação.
+
+#### 4.1. Abrir o Swagger
+
+1. Deixe o Docker Desktop aberto e execute o comando da etapa 3. Confirme com `docker compose ps` que os três serviços estão **healthy**.
+2. Abra uma nova aba no navegador e acesse **[http://localhost:5203/swagger](http://localhost:5203/swagger)**. Esse endereço funciona no computador onde os containers estão rodando.
+3. Você verá a página **IAS API**, com uma lista de operações. O Swagger é uma página para experimentar as funções do sistema; vamos usá-lo para criar sua organização.
+
+Se você alterou a porta da API, troque `5203` pela porta escolhida. Se a página não abrir, confira se os containers estão em execução e consulte os logs do backend.
+
+#### 4.2. Criar a organização e copiar o ID
+
+1. Na lista de operações, encontre a linha **`POST /api/v1/tenants`**, com o título **Create Tenant**. Você pode usar `Ctrl+F` e pesquisar `/api/v1/tenants`.
+2. Clique nessa linha para expandir a operação. Escolha **POST**, que cria a organização; a operação **GET** serve para consultar uma organização que já existe.
+3. Clique no botão **Try it out**.
+4. Na caixa **Request body**, substitua o conteúdo pelo exemplo abaixo. Você pode trocar o nome pelo da sua organização:
 
 ```json
 {"name": "Minha organizacao"}
 ```
 
-3. Clique em **Execute** e copie o campo `id` da resposta HTTP 201.
-4. Abra o site, clique na **engrenagem** no cabeçalho e cole o ID no campo **Tenant**.
-5. Cadastre competências, profissionais e clientes; depois crie projetos e suas alocações.
+5. Clique no botão **Execute**, logo abaixo da caixa de texto. Não é necessário informar um Tenant ID para criar a primeira organização.
+6. Desça até **Responses → Server response**. Confira se o campo **Code** mostra **201**, indicando que a organização foi criada.
+7. Em **Response body**, procure o campo **`id`**. A resposta terá um formato parecido com este:
 
-Alternativa no PowerShell para criar a organização:
+```json
+{
+  "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+  "name": "Minha organizacao",
+  "isActive": true
+}
+```
+
+8. Copie **somente o valor de `id` retornado na sua execução**, sem aspas, vírgulas ou o texto `id`. Guarde esse código: você vai usá-lo para abrir a mesma organização novamente. Os `x` acima são apenas uma ilustração e não funcionam no site.
+
+**Atenção:** copie o ID de **Server response → Response body**, que aparece depois de clicar em **Execute**. A área **Example Value** mostra apenas um exemplo de documentação.
+
+Se aparecer **409**, já existe uma organização com esse nome. Use o ID que você guardou ou crie outra com um nome diferente.
+
+#### 4.3. Informar o Tenant ID no site
+
+1. Abra a aplicação em **[http://localhost:5173](http://localhost:5173)**.
+2. Clique no ícone de **engrenagem**, no canto superior direito do cabeçalho. O menu se chama **Configuração de desenvolvimento**.
+3. No campo **Tenant (X-Tenant-Id)**, cole o ID que você copiou do Swagger.
+4. A configuração é salva automaticamente ao preencher o campo; **não existe botão Salvar**. O campo **Ator (opcional)** pode ficar vazio.
+5. Feche o menu clicando fora dele. O aviso **“Informe um GUID de tenant válido para carregar os dados.”** deve desaparecer. Se continuar aparecendo, confira se copiou o código completo, sem aspas ou espaços.
+6. Comece os cadastros: competências e pessoas; depois clientes e projetos; por fim, necessidades e alocações. Os clientes são cadastrados na tela de projetos.
+
+**As listas vazias no primeiro acesso são esperadas:** a instalação ainda não tem profissionais, clientes ou projetos cadastrados. A indicação **Tenant conectado** confirma o formato do código informado; use sempre o ID real retornado pelo seu Swagger.
+
+Você só precisa criar a organização uma vez. Ao voltar ao site no mesmo navegador, o código fica salvo. Em outro navegador ou computador, informe o mesmo ID para acessar a mesma organização **no mesmo banco**. Se apagar o volume do banco, será necessário criar uma organização novamente.
+
+#### Alternativa: criar a organização pelo PowerShell
+
+Se preferir o terminal, este comando substitui a criação pelo Swagger. Depois, copie o `id` da resposta e siga a etapa **4.3**:
 
 ```powershell
 Invoke-RestMethod -Method Post -Uri http://127.0.0.1:5203/api/v1/tenants -ContentType 'application/json' -Body '{"name":"Minha organizacao"}'
 ```
 
-Use um nome diferente para cada organização. O navegador guarda o Tenant ID localmente; outro navegador precisa receber o mesmo ID para acessar os mesmos dados.
+Use um nome diferente para cada organização.
 
 ## Como funciona
 
