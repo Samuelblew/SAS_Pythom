@@ -33,3 +33,5 @@ Referência: [ciclo das dependências FastAPI](https://fastapi.tiangolo.com/adva
 Os testes HTTP passam pelo Nginx e pela API real com MySQL real; não automatizam
 cliques no navegador nem avaliam carga, segurança de produção ou todos os cenários
 de negócio. Lint pode emitir avisos de Fast Refresh; eles não são erros.
+O build Docker instala pelo lockfile sem executar auditoria de vulnerabilidades;
+essa auditoria não é uma condição de aprovação desta pipeline.
